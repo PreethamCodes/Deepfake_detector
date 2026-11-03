@@ -1,1 +1,1 @@
-"""Future GenD video detection."""
+"""GenD facial deepfake detection."""

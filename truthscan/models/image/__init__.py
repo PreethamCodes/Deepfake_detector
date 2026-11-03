@@ -1,1 +1,1 @@
-"""Future D³ image detection."""
+"""D³ image detection for TRUTHSCAN."""
