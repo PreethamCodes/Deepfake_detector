@@ -46,15 +46,21 @@ export interface Analysis extends Summary {
     scope: string;
   };
 }
+// Empty in development, where Vite proxies /api and /health. A static deployment (e.g. Vercel)
+// sets VITE_API_BASE_URL at build time to the backend origin, e.g. https://user-space.hf.space.
+const base = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
 async function request<T>(
   path: string,
   init?: RequestInit,
   savedFailure = false,
 ): Promise<T> {
-  const timer = AbortSignal.timeout(init?.method === "POST" ? 900_000 : 12_000);
+  // A sleeping hosted backend can take a while to wake, so reads allow 30 s there.
+  const timer = AbortSignal.timeout(
+    init?.method === "POST" ? 900_000 : base ? 30_000 : 12_000,
+  );
   let res: Response;
   try {
-    res = await fetch(path, { ...init, signal: timer });
+    res = await fetch(base + path, { ...init, signal: timer });
   } catch {
     throw new Error(
       timer.aborted

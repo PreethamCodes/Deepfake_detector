@@ -107,8 +107,63 @@ Every figure shown comes from a backend response. The browser runs no inference.
 The browser smoke test drives the real UI against an isolated backend and temporary database, and writes screenshots. It needs FFmpeg on `PATH`, Microsoft Edge and a short clip with a detectable face and an audio track:
 
 ```powershell
-uv run --locked --all-extras --with playwright python frontend/tests/browser_smoke.py --video "uploadseal video.mp4" --screenshots docs/screenshots
+uv run --locked --all-extras --with playwright python frontend/tests/browser_smoke.py --video "uploads\real video.mp4" --screenshots docs/screenshots
 ```
+
+## Run with Docker
+
+Docker runs the whole stack without installing Python, uv, Node.js or the model weights yourself. You need Docker Desktop (or Docker Engine with Compose v2), about 12 GB of free disk space and internet access for the first build. From the repository root:
+
+```powershell
+docker compose up --build
+```
+
+Open the workspace at [localhost on port 8080](http://127.0.0.1:8080). The API and Swagger UI are also available at [localhost on port 8000](http://127.0.0.1:8000/docs). Stop the stack with Ctrl+C, or with `docker compose down` if it runs in the background (`docker compose up -d`).
+
+| Service | Image | Role |
+| --- | --- | --- |
+| `backend` | Root `Dockerfile` | FastAPI with D³, GenD and AASIST on CPU. Downloads and hash-verifies the official weights at build time (about 2.2 GB) |
+| `frontend` | `frontend/Dockerfile` | Production Vite build served by nginx, which forwards `/api` and `/health` to the backend so the browser stays same-origin |
+
+The first build takes roughly 10–20 minutes, depending on bandwidth. Later builds reuse cached layers, and editing application code does not re-download the weights. Report history is kept in the `shodha-history` volume, so it survives restarts and rebuilds. `docker compose down -v` deletes it. Both ports bind to 127.0.0.1 only, matching the single-user, no-login design. To remove the images afterwards, run `docker compose down --rmi local -v`.
+
+The same backend `Dockerfile` is used by the Hugging Face Space below.
+
+## Deployment: Hugging Face Spaces (backend) and Vercel (frontend)
+
+Vercel serves only the static React build. The backend needs a long-running process with about 3 GB of RAM and 2.2 GB of model weights, so it runs in a Hugging Face Docker Space. Local development needs none of this.
+
+**1. Backend Space**
+
+1. On huggingface.co, create a Space with SDK **Docker** (Blank), hardware **CPU basic** and visibility **Public**. Create a **Write** access token under Settings → Access Tokens.
+2. Clone the empty Space next to this repository and copy the backend into it:
+
+```powershell
+git clone https://huggingface.co/spaces/<user>/shodha-ai ..\shodha-ai
+powershell -ExecutionPolicy Bypass -File deploy\huggingface\prepare_space.ps1 -Destination ..\shodha-ai
+cd ..\shodha-ai
+git add .
+git commit -m "Deploy SHODHA AI backend"
+git push
+```
+
+Git asks for your Hugging Face username, with the token as the password. The script copies only `truthscan/`, the dependency files, the model notices, the root `Dockerfile` and the Space `README.md`. The image downloads and hash-verifies the official weights during the build, which takes about 10–20 minutes the first time. When the Space shows **Running**, check `https://<user>-shodha-ai.hf.space/health`.
+
+**2. Frontend on Vercel**
+
+1. Import this GitHub repository in Vercel and set **Root Directory** to `frontend`. Vercel detects Vite (`npm run build`, output `dist`). No rewrites are needed because the app uses hash routes.
+2. Add the environment variable `VITE_API_BASE_URL` = `https://<user>-shodha-ai.hf.space`, then deploy.
+
+**3. Connect them**
+
+In the Space, go to Settings → Variables and secrets and add `SHODHA_ALLOWED_ORIGINS` = your Vercel URL, for example `https://shodha-ai.vercel.app`. List several origins separated by commas. The Space restarts with the new value. Without this variable the API sends no CORS headers, and browsers block calls from other origins.
+
+**Operating notes.**
+- Free Spaces sleep when idle, so open the Space before a demo.
+- Free storage is not persistent, so report history resets on restart.
+- The 2-vCPU tier is considerably slower than a multi-core laptop.
+- The service has no login and all visitors share one history, so keep it public only while needed.
+- The D³ classifier weights have no explicit licence. The Space downloads them from the official source and does not redistribute them.
 
 ## Architecture
 

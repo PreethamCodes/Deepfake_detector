@@ -1,0 +1,21 @@
+# Keep the backend build context small and free of local data, weights and secrets.
+.git
+.venv
+**/__pycache__
+.pytest_cache
+.claude
+.impeccable
+.env
+.env.*
+checkpoints
+data
+uploads
+reports
+frontend
+deploy
+docs
+tests
+*.pt
+*.pth
+*.safetensors
+*.onnx

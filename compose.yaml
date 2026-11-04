@@ -1,0 +1,24 @@
+# Full SHODHA AI stack: docker compose up --build, then open http://127.0.0.1:8080
+# Ports bind to localhost only, matching the single-user, no-login design.
+services:
+  backend:
+    build: .
+    image: shodha-ai-backend
+    ports:
+      - "127.0.0.1:8000:8000"   # Optional direct API access and /docs
+    volumes:
+      - shodha-history:/home/user/app/data   # Report history survives container restarts
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    image: shodha-ai-frontend
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  shodha-history:
