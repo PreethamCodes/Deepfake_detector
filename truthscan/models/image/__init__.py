@@ -1,1 +1,1 @@
-"""D³ image detection for TRUTHSCAN."""
+"""D³ image detection for SHODHA AI."""

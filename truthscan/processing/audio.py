@@ -5,9 +5,10 @@ import av
 import numpy as np
 from pydantic import BaseModel
 
+from truthscan.processing.limits import AUDIO_BYTES as MAX_BYTES
+
 RATE = 16_000
 WINDOW = 64_600
-MAX_BYTES = 64 * 1024**2
 MAX_SECONDS = 300
 FORMATS = {".wav": "wav", ".mp3": "mp3", ".flac": "flac"}
 

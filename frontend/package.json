@@ -1,0 +1,32 @@
+{
+  "name": "shodha-ai-workspace",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "lucide-react": "^0.577.0",
+    "recharts": "^3.7.0",
+    "@radix-ui/react-slot": "^1.2.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.5.0",
+    "@fontsource-variable/manrope": "^5.2.0"
+  },
+  "devDependencies": {
+    "vite": "^7.3.5",
+    "@vitejs/plugin-react": "^5.1.0",
+    "tailwindcss": "^4.2.0",
+    "@tailwindcss/vite": "^4.2.0",
+    "typescript": "~5.9.3",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/node": "^22.0.0"
+  }
+}

@@ -1,0 +1,2 @@
+# Investigation workspace
+Mode: Operate. The first viewport offers a single prominent New analysis action beside an abstract scan aperture. A restrained archive distribution and ruled recent-case ledger draw only on returned records. Across the workbench, the signature interaction is selecting a GenD sample to inspect its timestamp, score and available video frame. Cyan focus lines, a dark navy field and single-weight icons repeat across capture and review. The mobile navigation collapses without hiding report actions.

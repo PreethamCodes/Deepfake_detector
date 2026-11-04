@@ -1,10 +1,16 @@
-# TRUTHSCAN
+# SHODHA AI
 
-TRUTHSCAN is a Python platform for analyzing image, video, and audio evidence of synthetic media. Phase 1 provides an isolated environment, a FastAPI liveness endpoint, a shared response schema, and automated tests.
+**Uncovering the Truth Behind Digital Media.**
+
+SHODHA AI is a multimodal deepfake detection and digital-forensics platform. It analyzes images, sampled faces in video, and speech for signs of synthetic media. A local FastAPI service runs three pretrained detectors (D³, GenD and AASIST), combines their findings into a single explainable forensic report, and serves a React investigation workspace.
+
+> The project was previously named TRUTHSCAN. The internal Python package (`truthscan`), API routes and the `TRUTHSCAN_BACKEND_URL` variable keep the original name for compatibility.
+
+Media authenticity and factual truth are different questions. A detector label describes the examined media and does not establish whether a claim or event is true.
 
 ## Local setup
 
-Install uv and run the following from the repository root. The project selects Python 3.11. uv can download the interpreter if needed. The lockfile records the runtime and development dependencies.
+Install uv and run commands from the repository root. The project selects Python 3.11. For media uploads and inference, follow the [Phase 6 analysis API setup](#phase-6-analysis-api). For a lightweight health check with only the base dependencies, use the commands below.
 
 ```powershell
 uv sync --locked
@@ -19,10 +25,89 @@ curl.exe http://127.0.0.1:8000/health
 
 A healthy API returns HTTP 200 with `{"data":{"status":"ok"}}`. This endpoint checks API liveness. Interactive API documentation is available at [localhost on port 8000](http://127.0.0.1:8000/docs). Stop the server with Ctrl+C.
 
-## Tests
+## Base tests
+
+For the complete detector and API suite, use the all-extras test command in the Phase 6 section.
 
 ```powershell
 uv run --locked python -m pytest -q
+```
+
+## Phase 6 analysis API
+
+Run the following from the project root. The three weight setup commands are needed on first installation. The licensing and input requirements for each detector appear below.
+
+```powershell
+uv sync --locked --all-extras
+uv run --locked --all-extras python -m truthscan.models.image.weights
+uv run --locked --all-extras python -m truthscan.models.video.weights
+uv run --locked --all-extras python -m truthscan.models.audio.weights
+uv run --locked --all-extras python -m uvicorn truthscan.api.main:app --host 127.0.0.1 --port 8000
+```
+
+| Method and path | Behavior |
+| --- | --- |
+| `GET /health` | API liveness. Returns `{"data":{"status":"ok"}}` independently of checkpoint readiness. |
+| `POST /api/v1/analyze` | Submit multipart files named `image`, `video`, or `audio`. Wait for the finished report. |
+| `GET /api/v1/results/{analysis_id}` | Fetch the saved report. An unknown or expired UUID returns 404. |
+| `GET /api/v1/results?limit=20` | Newest-first summaries including ID, status, creation time in UTC, and processing time. Limit is 1–100. |
+
+Open [Swagger UI](http://127.0.0.1:8000/docs) for file pickers and response schemas or [OpenAPI JSON](http://127.0.0.1:8000/openapi.json) for the machine-readable contract. In a second PowerShell window, use real paths for the media you want to submit.
+
+```powershell
+$base = "http://127.0.0.1:8000"
+$case = curl.exe -sS -F "image=@uploads/real photo 2.jpg" "$base/api/v1/analyze" | ConvertFrom-Json
+$case.data.report
+curl.exe "$base/api/v1/results/$($case.data.analysis_id)"
+curl.exe "$base/api/v1/results?limit=5"
+# Example for three related input files
+curl.exe -F "image=@uploads/still.jpg" -F "video=@uploads/clip.mp4" -F "audio=@uploads/speech.wav" "$base/api/v1/analyze"
+uv run --locked --all-extras python -m pytest -q tests/test_health.py tests/test_api.py
+uv run --locked --all-extras python -m pytest -q
+```
+
+**Response contract.** A created analysis includes `data.analysis_id`, `created_at`, `status`, `processing_time_ms`, and `report`. The report has the same [evidence structure as the fusion CLI](docs/fusion-example.json). The API uses public source labels such as `video.mp4` and removes internal detector error messages. Processing time includes reading the request, validation, and CPU analysis. A saved result has a relative `Location` header on the POST response.
+
+| POST outcome | HTTP result |
+| --- | --- |
+| All requested detectors return labels, even if labels conflict | 201, `completed` |
+| Some detectors fail and others return labels | 201, `partial`, overall `INCONCLUSIVE`, individual errors preserved |
+| All requested detectors fail after dispatch | Saved `failed` report, 422 for unusable media/no faces, 503 for unavailable weights, 500 for inference/runtime errors |
+| Malformed multipart body, size limit, unsupported type/signature, or invalid selection | 400, 413, 415, or 422 with a `detail` message. No report is created. |
+| Analysis slot occupied, or storage unavailable | 429 with `Retry-After`, or 503 with a `detail` message |
+
+**Upload handling.** Supply one file per named modality. Images accept JPG/JPEG and PNG up to 20 MiB, video accepts MP4/AVI/MOV/MKV up to 256 MiB, and speech accepts WAV/MP3/FLAC up to 64 MiB. Incoming byte counts cap each file and the combined request (340 MiB plus 64 KiB for multipart framing), including chunked transfers. The API checks allowlisted extensions and common file signatures, then the existing processors decode the content and apply their own limits. A browser's MIME declaration alone is insufficient. Files use generated private case directories and server-chosen names, and are closed and deleted after processing. Only the sanitized report is saved in the Git-ignored SQLite database at `data/api/results.sqlite3`. The latest 100 reports survive a service restart.
+
+**Operating scope.** Run one server worker on localhost for a single trusted user. The API has shared local history and no login. Each POST uses one CPU analysis slot and waits for completion. Large videos and cold model loads can take time. Supply speech separately to analyze a video's audio. A model prediction assesses the examined media and cannot establish factual truth.
+
+## Phase 7 web workspace
+
+The React workspace in `frontend/` talks to the FastAPI service through `/api` and `/health`. Vite forwards those paths to `TRUTHSCAN_BACKEND_URL` (default `http://127.0.0.1:8000`, see `frontend/.env.example`). Node.js 20 or later is required. Start the backend first using the Phase 6 commands, then in a second PowerShell window:
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+Open [localhost on port 5173](http://127.0.0.1:5173). `npm run build` type-checks and writes a production bundle to `frontend/dist/`, and `npm run preview` serves it with the same backend forwarding.
+
+| Section | Contents |
+| --- | --- |
+| Dashboard | Stored analysis count, REAL / AI-GENERATED / INCONCLUSIVE counts from the archive, recent investigations |
+| Media analysis | Drag-and-drop or browse for one image, video and/or audio file, previews, client-side type and size checks, processing state |
+| Forensic report | Overall assessment, agreement, case status, each detector's label, original scores and processing time, failed modalities, scope note |
+| Video forensics | Flagged frames, per-frame GenD score chart with the 0.5 decision line, frame ledger, seeking and still capture from the local video |
+| Audio forensics | Playback, AASIST label, bona fide and spoof logits, decoded audio metadata |
+| Investigation history | The latest 100 reports with search by ID and assessment filter |
+| About | Problem, objective, detectors, architecture, limitations and responsible use |
+
+Every figure shown comes from a backend response. The browser runs no inference. Source media is deleted after analysis, so playback on a reopened report asks you to select the original file locally.
+
+The browser smoke test drives the real UI against an isolated backend and temporary database, and writes screenshots. It needs FFmpeg on `PATH`, Microsoft Edge and a short clip with a detectable face and an audio track:
+
+```powershell
+uv run --locked --all-extras --with playwright python frontend/tests/browser_smoke.py --video "uploadseal video.mp4" --screenshots docs/screenshots
 ```
 
 ## Architecture
@@ -36,11 +121,11 @@ uv run --locked python -m pytest -q
 | `truthscan/fusion/` | Case-level decisions and JSON forensic reports from detector evidence |
 | `truthscan/forensics/` | Future extraction of forensic indicators |
 | `truthscan/reporting/` | Future explanations based on detector and forensic evidence |
-| `truthscan/frontend/` | Future Streamlit client for the HTTP API |
+| `frontend/` | React, TypeScript and Vite investigation workspace for the HTTP API |
 | `tests/` | API contract and schema validation tests |
 | `docs/` | Existing project planning documents |
 
-The planned analysis flow runs from media preprocessing to independent detectors, then combines detector outputs with forensic evidence for reporting. The frontend will consume the FastAPI contract. Phase 1 runs on CPU and requires only the API and test stack.
+The planned analysis flow runs from media preprocessing to independent detectors, then combines detector outputs with forensic evidence for reporting. The React workspace consumes the FastAPI contract. All inference runs on CPU.
 
 ## Phase 5 multimodal fusion and forensics
 
@@ -97,7 +182,7 @@ result = detector.detect("sample.png")
 print(result.model_dump())
 ```
 
-Input type is determined from file contents. Single-frame JPEG and PNG inputs up to 20 MiB and 24 million pixels are decoded to RGB, resized to 224 × 224 with bilinear interpolation, and normalized with CLIP channel statistics. D³ encodes the original image and a 14 × 14 patch shuffle, then classifies their pre-projection CLS features. TRUTHSCAN uses a local shuffle seed of 418 per image for repeatability. Upstream validation advances the random generator across batches, so individual scores can differ. The release's decision rule labels scores strictly above 0.5 as AI-GENERATED. Scores have no established probability calibration for a particular upload.
+Input type is determined from file contents. Single-frame JPEG and PNG inputs up to 20 MiB and 24 million pixels are decoded to RGB, resized to 224 × 224 with bilinear interpolation, and normalized with CLIP channel statistics. D³ encodes the original image and a 14 × 14 patch shuffle, then classifies their pre-projection CLS features. SHODHA AI uses a local shuffle seed of 418 per image for repeatability. Upstream validation advances the random generator across batches, so individual scores can differ. The release's decision rule labels scores strictly above 0.5 as AI-GENERATED. Scores have no established probability calibration for a particular upload.
 
 ### Model attribution and usage terms
 
@@ -188,6 +273,6 @@ For audio alone, substitute `--extra audio` for `--all-extras`. The audio extra 
 
 **Input and scope.** The processor checks the container, decodes the first audio stream, resamples to 16 kHz floating-point PCM and averages the channels. It scans the stream through the end for decode errors and duration limits, retaining only the first 64,600 samples (4.0375 seconds). Short utterances repeat to fill this window, following upstream evaluation. A change later in the recording can be missed. Metadata gives source rate, channels, codec, decoded duration and the amount of original audio analyzed before repeat-padding. Defaults are 64 MiB, five minutes, 1–8 channels and source rates of 1–192 kHz. A silent analysis window returns an error. Supply speech; there is no speech/music classifier.
 
-**Output.** The CLI returns JSON with prediction, raw score, spoof logit, model name, elapsed time in milliseconds and metadata. The official evaluation score (`raw_score`) is the bona fide class logit, which can be negative or positive. TRUTHSCAN predicts REAL if that logit exceeds the spoof logit and AI-GENERATED otherwise. Neither number is a calibrated probability. Invalid input, model loading or inference errors produce a specific error code, null prediction and null raw score, and exit status 1. Success exits with status 0.
+**Output.** The CLI returns JSON with prediction, raw score, spoof logit, model name, elapsed time in milliseconds and metadata. The official evaluation score (`raw_score`) is the bona fide class logit, which can be negative or positive. SHODHA AI predicts REAL if that logit exceeds the spoof logit and AI-GENERATED otherwise. Neither number is a calibrated probability. Invalid input, model loading or inference errors produce a specific error code, null prediction and null raw score, and exit status 1. Success exits with status 0.
 
-**Attribution.** TRUTHSCAN uses the full pretrained AASIST by Jee-weon Jung and colleagues, including the reference architecture, evaluation configuration and weights from NAVER's CLOVA repository at commit `a04c9863f63d44471dde8a6abcb3b082b07cd1d1`. The model was trained for ASVspoof 2019 logical-access speech spoofing. The repository has an MIT license requiring preservation of its notice. The checkpoint is distributed in that repository without a separate checkpoint-specific license identified. The upstream NOTICE also lists third-party terms, including CC BY-NC-SA 4.0 for the min t-DCF evaluation code, which this adapter does not use. [Official checkpoint](https://github.com/clovaai/aasist/blob/a04c9863f63d44471dde8a6abcb3b082b07cd1d1/models/weights/AASIST.pth) · [Official license](https://github.com/clovaai/aasist/blob/a04c9863f63d44471dde8a6abcb3b082b07cd1d1/LICENSE) · [Notices](docs/AASIST-NOTICE.txt)
+**Attribution.** SHODHA AI uses the full pretrained AASIST by Jee-weon Jung and colleagues, including the reference architecture, evaluation configuration and weights from NAVER's CLOVA repository at commit `a04c9863f63d44471dde8a6abcb3b082b07cd1d1`. The model was trained for ASVspoof 2019 logical-access speech spoofing. The repository has an MIT license requiring preservation of its notice. The checkpoint is distributed in that repository without a separate checkpoint-specific license identified. The upstream NOTICE also lists third-party terms, including CC BY-NC-SA 4.0 for the min t-DCF evaluation code, which this adapter does not use. [Official checkpoint](https://github.com/clovaai/aasist/blob/a04c9863f63d44471dde8a6abcb3b082b07cd1d1/models/weights/AASIST.pth) · [Official license](https://github.com/clovaai/aasist/blob/a04c9863f63d44471dde8a6abcb3b082b07cd1d1/LICENSE) · [Notices](docs/AASIST-NOTICE.txt)

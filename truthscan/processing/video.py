@@ -13,6 +13,8 @@ from av.stream import Disposition
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.json_schema import SkipJsonSchema
 
+from truthscan.processing.limits import VIDEO_BYTES
+
 CONTAINER_FORMATS = {".mp4": "mov", ".mov": "mov", ".avi": "avi", ".mkv": "matroska"}
 
 
@@ -20,7 +22,7 @@ class VideoConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
     samples: int = Field(default=8, ge=1, le=64)
     size: int = Field(default=224, ge=32, le=512)
-    max_bytes: int = Field(default=256 * 1024**2, gt=0)
+    max_bytes: int = Field(default=VIDEO_BYTES, gt=0)
     max_seconds: float = Field(default=600, gt=0, allow_inf_nan=False)
     max_frames: int = Field(default=36_000, gt=0)
     max_pixels: int = Field(default=3840 * 2160, gt=0)

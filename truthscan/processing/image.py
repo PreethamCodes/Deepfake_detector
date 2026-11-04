@@ -7,7 +7,8 @@ from struct import error as StructError
 from PIL import Image
 from torchvision.transforms import Compose, Normalize, Resize, ToTensor
 
-MAX_BYTES = 20 * 1024 * 1024
+from truthscan.processing.limits import IMAGE_BYTES as MAX_BYTES
+
 MAX_PIXELS = 24_000_000
 TRANSFORM = Compose([
     Resize((224, 224)),
