@@ -33,7 +33,7 @@ For the complete detector and API suite, use the all-extras test command in the 
 uv run --locked python -m pytest -q
 ```
 
-## Phase 6 analysis API
+## analysis API
 
 Run the following from the project root. The three weight setup commands are needed on first installation. The licensing and input requirements for each detector appear below.
 
@@ -80,7 +80,7 @@ uv run --locked --all-extras python -m pytest -q
 
 **Operating scope.** Run one server worker on localhost for a single trusted user. The API has shared local history and no login. Each POST uses one CPU analysis slot and waits for completion. Large videos and cold model loads can take time. Supply speech separately to analyze a video's audio. A model prediction assesses the examined media and cannot establish factual truth.
 
-## Phase 7 web workspace
+## web workspace
 
 The React workspace in `frontend/` talks to the FastAPI service through `/api` and `/health`. Vite forwards those paths to `TRUTHSCAN_BACKEND_URL` (default `http://127.0.0.1:8000`, see `frontend/.env.example`). Node.js 20 or later is required. Start the backend first using the Phase 6 commands, then in a second PowerShell window:
 
@@ -182,7 +182,7 @@ In the Space, go to Settings → Variables and secrets and add `SHODHA_ALLOWED_O
 
 The planned analysis flow runs from media preprocessing to independent detectors, then combines detector outputs with forensic evidence for reporting. The React workspace consumes the FastAPI contract. All inference runs on CPU.
 
-## Phase 5 multimodal fusion and forensics
+## multimodal fusion and forensics
 
 Pass one, two, or three related files in a single case. The caller chooses which files belong together. A video input runs GenD on sampled faces. Supply its speech separately with `--audio` to include AASIST. An image input runs D³ on that image.
 
@@ -214,7 +214,7 @@ For a Python caller, `truthscan.fusion.engine.analyze(image=..., video=..., audi
 
 The [example forensic report](docs/fusion-example.json) records one local CPU run on a video, its first frame, and its separately extracted soundtrack. Source paths are shortened to filenames. D³ labeled the still REAL, while GenD and AASIST flagged their respective inputs. GenD scored five of eight frames and flagged two. The conflicting verdicts produced an INCONCLUSIVE assessment. This example illustrates the decision rule and supplies no accuracy estimate.
 
-## Phase 2 image detection
+## image detection
 
 Run these commands from the repository root. The optional image stack adds CPU PyTorch, torchvision, Pillow, and OpenAI CLIP. First-time setup requires Git, internet access, and room for the packages and both weight files (about 902 MiB combined).
 
@@ -249,7 +249,7 @@ The frozen visual backbone and its Python implementation come from OpenAI CLIP. 
 
 **PyTorch compatibility.** PyTorch 2.15 warns about `torch.jit.load` when opening the official CLIP TorchScript archive. `torch.export.load` expects an exported program saved in a different format. The detector retains the hash-verified TorchScript loader for this backbone. The warning can appear once during live inference and tests. The separate D³ classifier uses `torch.load(..., weights_only=True)`.
 
-## Phase 3 video processing
+## video processing
 
 The processor accepts local MP4, MOV, AVI and Matroska (`.mkv`) files, including files saved by an upload handler. PyAV uses its FFmpeg libraries to identify the container and decode the first video track other than cover art. OpenCV resizes selected frames on CPU. The Python wheels include the necessary native libraries on the tested Windows machine.
 
@@ -312,7 +312,7 @@ print(result.model_dump_json(indent=2))
 
 The vision configuration is from OpenAI CLIP. YuNet is distributed by OpenCV Zoo under the MIT license. The GenD and YuNet copyright notices are included locally. [CLIP configuration](https://huggingface.co/openai/clip-vit-large-patch14/tree/32bd64288804d66eefd0ccbe215aa642df71cc41) · [YuNet source and license](https://github.com/opencv/opencv_zoo/tree/48b10fa505aeb51fbd127fc60a5c660040e823b7/models/face_detection_yunet) · [Notices](docs/GenD-NOTICES.md)
 
-## Phase 4 audio detection
+## audio detection
 
 AASIST accepts standalone speech recordings in WAV, MP3 or FLAC. Install the audio extra, download the hash-verified official AASIST checkpoint, and run the detector from the project root. Use all extras to keep image and video dependencies installed in the same environment.
 
