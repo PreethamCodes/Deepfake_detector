@@ -115,8 +115,10 @@ function App() {
   }, [page, id, revision]);
   useEffect(() => {
     document.title =
-      (navigation.find((n) => n.id === page)?.name || "Forensic report") +
-      " · SHODHA AI";
+      page === "about"
+        ? "About · SHODHA AI"
+        : (navigation.find((n) => n.id === page)?.name || "Forensic report") +
+          " · SHODHA AI";
   }, [page]);
   async function submit() {
     if (busy) return;

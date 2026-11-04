@@ -1,0 +1,11 @@
+modality,file,truth,sha256,prediction,correct,detection_score,raw_score,spoof_logit,error_code,processing_time_ms,detector_reported_ms,cpu_seconds,cpu_cores_used,frames_sampled,frames_scored,frames_flagged
+image,image/fake/Gemini_Generated_Image_2wei802wei802wei.jpg,AI-GENERATED,6962bf7b9db7de3a,AI-GENERATED,True,0.9995513558387756,,,,6383.9,6383.3,47.58,7.45,,,
+image,image/fake/Gemini_Generated_Image_2xx9cy2xx9cy2xx9.jpg,AI-GENERATED,a2f33160370758b3,REAL,False,0.0017619585851207376,,,,2899.4,2899.2,38.38,13.24,,,
+image,image/fake/Gemini_Generated_Image_6hj5kx6hj5kx6hj5.jpg,AI-GENERATED,0815b848dd8f711c,AI-GENERATED,True,0.8207209706306458,,,,2318.8,2318.5,31.89,13.75,,,
+image,image/fake/Gemini_Generated_Image_fn4e1bfn4e1bfn4e.jpg,AI-GENERATED,81580605b65a78d7,REAL,False,0.04180646687746048,,,,2255.8,2255.4,31.25,13.85,,,
+image,image/fake/Gemini_Generated_Image_hcr71ahcr71ahcr7.jpg,AI-GENERATED,1cb3915b78fa3a59,AI-GENERATED,True,0.9993383288383484,,,,2215.1,2214.7,30.77,13.89,,,
+image,image/fake/Gemini_Generated_Image_iubqw4iubqw4iubq.jpg,AI-GENERATED,75706c14ffaa9cee,REAL,False,0.03124077059328556,,,,2275.1,2274.9,31.58,13.88,,,
+image,image/fake/Gemini_Generated_Image_sfgyr2sfgyr2sfgy.jpg,AI-GENERATED,ec43230e026a727f,REAL,False,0.123295359313488,,,,2207.6,2207.3,30.2,13.68,,,
+image,image/fake/Gemini_Generated_Image_ucqg5xucqg5xucqg.jpg,AI-GENERATED,3b4836e55af3d162,AI-GENERATED,True,0.9928804636001587,,,,2195.5,2195.2,30.62,13.95,,,
+image,image/fake/Gemini_Generated_Image_wz8g0awz8g0awz8g.jpg,AI-GENERATED,be77a9def0ba4f14,AI-GENERATED,True,0.9997441172599792,,,,2413.2,2412.8,33.08,13.71,,,
+image,image/fake/kling_20261104_IMAGE_A_young_bo_5273_3.jpg,AI-GENERATED,85ad169ef97323fe,AI-GENERATED,True,0.7497183680534363,,,,2594.0,2593.6,35.84,13.82,,,

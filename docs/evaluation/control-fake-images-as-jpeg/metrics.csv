@@ -1,0 +1,2 @@
+modality,samples,real_samples,fake_samples,scored,failed,coverage,tp,tn,fp,fn,accuracy,accuracy_ci95,precision,precision_ci95,recall,recall_ci95,specificity,f1,cold_start_ms,warm_mean_ms,warm_median_ms,warm_max_ms,cpu_seconds_total,process_peak_memory_mib_so_far
+image,10,0,10,10,0,1.0,6,0,0,4,0.6,"[0.3127, 0.8318]",1.0,"[0.6097, 1.0]",0.6,"[0.3127, 0.8318]",,0.75,6383.9,2374.9,2275.1,2899.4,341.19,1674.0

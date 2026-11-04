@@ -1,0 +1,4 @@
+modality,samples,real_samples,fake_samples,scored,failed,coverage,tp,tn,fp,fn,accuracy,accuracy_ci95,precision,precision_ci95,recall,recall_ci95,specificity,f1,cold_start_ms,warm_mean_ms,warm_median_ms,warm_max_ms,cpu_seconds_total,process_peak_memory_mib_so_far
+image,20,10,10,20,0,1.0,9,9,1,1,0.9,"[0.699, 0.9721]",0.9,"[0.5958, 0.9821]",0.9,"[0.5958, 0.9821]",0.9,0.9,5913.1,2415.5,2304.5,2973.9,665.01,1780.6
+video,9,5,4,7,2,0.7778,0,0,4,3,0.0,"[0.0, 0.3543]",0.0,"[0.0, 0.4899]",0.0,"[0.0, 0.5615]",0.0,0.0,36536.0,15664.5,12899.7,36485.0,1242.28,3087.1
+audio,8,3,5,8,0,1.0,5,2,1,0,0.875,"[0.5291, 0.9776]",0.8333,"[0.4365, 0.9699]",1.0,"[0.5655, 1.0]",0.6667,0.9091,848.0,462.2,448.2,609.8,53.83,3199.2
