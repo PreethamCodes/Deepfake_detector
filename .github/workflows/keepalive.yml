@@ -1,0 +1,26 @@
+# Keeps the hosted SHODHA AI backend (Hugging Face Space) from sleeping by calling /health on a schedule.
+# Set the repository variable SHODHA_BACKEND_URL (Settings → Secrets and variables → Actions → Variables),
+# e.g. https://<user>-shodha-ai.hf.space. The job skips itself until the variable exists.
+name: Keep backend awake
+
+on:
+  schedule:
+    - cron: "17 */6 * * *" # every 6 hours, at minute 17 (UTC)
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    if: ${{ vars.SHODHA_BACKEND_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Call /health
+        env:
+          BACKEND_URL: ${{ vars.SHODHA_BACKEND_URL }}
+        run: |
+          # A sleeping Space can take minutes to start, so allow long waits and retries.
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 30 --retry-all-errors --max-time 240 \
+            "${BACKEND_URL%/}/health"
