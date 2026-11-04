@@ -1,1 +1,1 @@
-"""Future AASIST audio detection."""
+"""AASIST speech anti-spoofing on CPU."""

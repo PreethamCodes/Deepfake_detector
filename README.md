@@ -32,8 +32,8 @@ uv run --locked python -m pytest -q
 | `truthscan/api/` | FastAPI entry point and HTTP routes |
 | `truthscan/schemas.py` | Generic Pydantic success envelope and typed health payload |
 | `truthscan/processing/` | Bounded image preprocessing and timestamped video frame sampling |
-| `truthscan/models/{image,video,audio}/` | D³ image detection, GenD facial video detection, and a placeholder for audio |
-| `truthscan/fusion/` | Future combination of modality-specific results |
+| `truthscan/models/{image,video,audio}/` | D³ image, GenD facial video, and AASIST speech detection |
+| `truthscan/fusion/` | Case-level decisions and JSON forensic reports from detector evidence |
 | `truthscan/forensics/` | Future extraction of forensic indicators |
 | `truthscan/reporting/` | Future explanations based on detector and forensic evidence |
 | `truthscan/frontend/` | Future Streamlit client for the HTTP API |
@@ -41,6 +41,38 @@ uv run --locked python -m pytest -q
 | `docs/` | Existing project planning documents |
 
 The planned analysis flow runs from media preprocessing to independent detectors, then combines detector outputs with forensic evidence for reporting. The frontend will consume the FastAPI contract. Phase 1 runs on CPU and requires only the API and test stack.
+
+## Phase 5 multimodal fusion and forensics
+
+Pass one, two, or three related files in a single case. The caller chooses which files belong together. A video input runs GenD on sampled faces. Supply its speech separately with `--audio` to include AASIST. An image input runs D³ on that image.
+
+```powershell
+uv sync --locked --all-extras
+uv run --locked --all-extras python -m truthscan.models.image.weights
+uv run --locked --all-extras python -m truthscan.models.video.weights
+uv run --locked --all-extras python -m truthscan.models.audio.weights
+uv run --locked --all-extras python -m truthscan.fusion --image "uploads\real photo 2.jpg"
+uv run --locked --all-extras python -m truthscan.fusion --image "uploads\still.jpg" --video "uploads\clip.mp4" --audio "uploads\speech.wav"
+uv run --locked --all-extras python -m pytest -q tests/test_fusion.py
+uv run --locked --all-extras python -m pytest -q
+```
+
+Substitute the actual filenames. The checkpoint commands are for initial setup. Each analysis runs only the requested detectors, sequentially on CPU. The CLI prints JSON and exits with 0 for a label, 1 for an inconclusive report, or 2 for invalid command syntax.
+
+**Decision policy.** D³ scores whole images, GenD averages scores from sampled faces, and AASIST compares speech logits. These scores have different meanings and no shared probability calibration. Fusion therefore uses the detectors' final labels without averaging scores, assigning weights, or counting a majority.
+
+| Evidence from the requested inputs | Overall assessment |
+| --- | --- |
+| One input and a successful prediction | That detector's label, marked `single` |
+| Two or three successful predictions, all the same | The shared label, marked `agree` |
+| Successful predictions contradict one another | `INCONCLUSIVE`, marked `conflict` |
+| Any requested detector fails, or no inputs are supplied | `INCONCLUSIVE`; agreement still describes the available verdicts |
+
+**Reading the evidence.** `findings` maps each requested modality to its supplied source path and the full native result, including scores, processing time, warnings, errors and available metadata. `not_supplied` lists omitted modalities. `flagged_modalities` lists detector-level AI-GENERATED verdicts. `flagged_video_frames` gives the original indices and source timestamps of individual GenD flags, including those in a video labeled REAL or a partially failed run. Look up the matching index in `findings.video.result.frames` for its score. An unscored frame supplies no vote. AASIST's `metadata.analyzed_seconds` is the duration examined from the start of the recording. Its label cannot locate a manipulation within that window. The overall label applies to the examined evidence and does not establish the factual truth of a scene or statement.
+
+For a Python caller, `truthscan.fusion.engine.analyze(image=..., video=..., audio=...)` runs detection and returns a Pydantic `ForensicReport`. To reuse existing detector outputs, call `fuse(video=(source_path, video_result), audio=(source_path_for_audio, audio_result))` from the same module. Both support omitted inputs. Call `report.model_dump(mode="json")` for a JSON-compatible dictionary. No overall confidence score is calculated.
+
+The [example forensic report](docs/fusion-example.json) records one local CPU run on a video, its first frame, and its separately extracted soundtrack. Source paths are shortened to filenames. D³ labeled the still REAL, while GenD and AASIST flagged their respective inputs. GenD scored five of eight frames and flagged two. The conflicting verdicts produced an INCONCLUSIVE assessment. This example illustrates the decision rule and supplies no accuracy estimate.
 
 ## Phase 2 image detection
 
@@ -139,3 +171,23 @@ print(result.model_dump_json(indent=2))
 **Attribution.** GenD is by Andrii Yermakov, Jan Cech, Jiri Matas, and Mario Fritz (WACV 2026). The authors' model card identifies the CLIP-L/14 checkpoint as MIT licensed. The pinned model revision is `891ce014a0308386c4d7d25b3dcf436a22db5504`. The adapter follows their MIT-licensed inference implementation. [Official checkpoint](https://huggingface.co/yermandy/GenD_CLIP_L_14/tree/891ce014a0308386c4d7d25b3dcf436a22db5504) · [Reference implementation](https://github.com/yermandy/GenD/tree/387a42266dd385fbe8f7626c5d3aa03eea3bfaab) · [Paper](https://openaccess.thecvf.com/content/WACV2026/papers/Yermakov_Deepfake_Detection_that_Generalizes_Across_Benchmarks_WACV_2026_paper.pdf)
 
 The vision configuration is from OpenAI CLIP. YuNet is distributed by OpenCV Zoo under the MIT license. The GenD and YuNet copyright notices are included locally. [CLIP configuration](https://huggingface.co/openai/clip-vit-large-patch14/tree/32bd64288804d66eefd0ccbe215aa642df71cc41) · [YuNet source and license](https://github.com/opencv/opencv_zoo/tree/48b10fa505aeb51fbd127fc60a5c660040e823b7/models/face_detection_yunet) · [Notices](docs/GenD-NOTICES.md)
+
+## Phase 4 audio detection
+
+AASIST accepts standalone speech recordings in WAV, MP3 or FLAC. Install the audio extra, download the hash-verified official AASIST checkpoint, and run the detector from the project root. Use all extras to keep image and video dependencies installed in the same environment.
+
+```powershell
+uv sync --locked --all-extras
+uv run --locked --all-extras python -m truthscan.models.audio.weights
+uv run --locked --all-extras python -m truthscan.models.audio "uploads\speech.wav"
+uv run --locked --all-extras python -m pytest -q tests/test_audio.py
+uv run --locked --all-extras python -m pytest -q
+```
+
+For audio alone, substitute `--extra audio` for `--all-extras`. The audio extra uses PyAV/FFmpeg, NumPy and CPU PyTorch. Both audio commands accept `--weights DIRECTORY` (default `checkpoints/aasist/`). After initial setup, inference runs offline. Set up D³ and GenD weights as described above to include their live tests. Reuse a single `AASISTDetector` from `truthscan.models.audio.detector` for repeated calls to `.detect(path)`.
+
+**Input and scope.** The processor checks the container, decodes the first audio stream, resamples to 16 kHz floating-point PCM and averages the channels. It scans the stream through the end for decode errors and duration limits, retaining only the first 64,600 samples (4.0375 seconds). Short utterances repeat to fill this window, following upstream evaluation. A change later in the recording can be missed. Metadata gives source rate, channels, codec, decoded duration and the amount of original audio analyzed before repeat-padding. Defaults are 64 MiB, five minutes, 1–8 channels and source rates of 1–192 kHz. A silent analysis window returns an error. Supply speech; there is no speech/music classifier.
+
+**Output.** The CLI returns JSON with prediction, raw score, spoof logit, model name, elapsed time in milliseconds and metadata. The official evaluation score (`raw_score`) is the bona fide class logit, which can be negative or positive. TRUTHSCAN predicts REAL if that logit exceeds the spoof logit and AI-GENERATED otherwise. Neither number is a calibrated probability. Invalid input, model loading or inference errors produce a specific error code, null prediction and null raw score, and exit status 1. Success exits with status 0.
+
+**Attribution.** TRUTHSCAN uses the full pretrained AASIST by Jee-weon Jung and colleagues, including the reference architecture, evaluation configuration and weights from NAVER's CLOVA repository at commit `a04c9863f63d44471dde8a6abcb3b082b07cd1d1`. The model was trained for ASVspoof 2019 logical-access speech spoofing. The repository has an MIT license requiring preservation of its notice. The checkpoint is distributed in that repository without a separate checkpoint-specific license identified. The upstream NOTICE also lists third-party terms, including CC BY-NC-SA 4.0 for the min t-DCF evaluation code, which this adapter does not use. [Official checkpoint](https://github.com/clovaai/aasist/blob/a04c9863f63d44471dde8a6abcb3b082b07cd1d1/models/weights/AASIST.pth) · [Official license](https://github.com/clovaai/aasist/blob/a04c9863f63d44471dde8a6abcb3b082b07cd1d1/LICENSE) · [Notices](docs/AASIST-NOTICE.txt)

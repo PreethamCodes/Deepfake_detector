@@ -1,0 +1,126 @@
+{
+  "assessment": "INCONCLUSIVE",
+  "agreement": "conflict",
+  "reason": "Detector labels conflict.",
+  "findings": {
+    "image": {
+      "source": "first-frame.png",
+      "result": {
+        "model_name": "D³ (ViT-L/14)",
+        "processing_time_ms": 9127.411200000097,
+        "prediction": "REAL",
+        "detection_score": 0.04236048832535744,
+        "warning": "The score is an uncalibrated classifier output."
+      }
+    },
+    "video": {
+      "source": "real video.mp4",
+      "result": {
+        "model_name": "GenD CLIP-L/14",
+        "processing_time_ms": 14109.963999999763,
+        "metadata": {
+          "width": 720,
+          "height": 1280,
+          "frame_count": 80,
+          "duration_seconds": 2.866633333333333,
+          "fps": 27.907301247688928
+        },
+        "frames": [
+          {
+            "index": 0,
+            "timestamp_seconds": 0,
+            "prediction": null,
+            "detection_score": null,
+            "status": "no_face"
+          },
+          {
+            "index": 11,
+            "timestamp_seconds": 0.4999777777777778,
+            "prediction": "REAL",
+            "detection_score": 0.3937157094478607,
+            "status": "scored"
+          },
+          {
+            "index": 23,
+            "timestamp_seconds": 0.9666333333333333,
+            "prediction": "AI-GENERATED",
+            "detection_score": 0.7080115675926208,
+            "status": "scored"
+          },
+          {
+            "index": 34,
+            "timestamp_seconds": 1.3333,
+            "prediction": "REAL",
+            "detection_score": 0.4849783480167389,
+            "status": "scored"
+          },
+          {
+            "index": 45,
+            "timestamp_seconds": 1.6999666666666666,
+            "prediction": "REAL",
+            "detection_score": 0.49360522627830505,
+            "status": "scored"
+          },
+          {
+            "index": 56,
+            "timestamp_seconds": 2.0666333333333333,
+            "prediction": "AI-GENERATED",
+            "detection_score": 0.7950941920280457,
+            "status": "scored"
+          },
+          {
+            "index": 68,
+            "timestamp_seconds": 2.4666333333333332,
+            "prediction": null,
+            "detection_score": null,
+            "status": "no_face"
+          },
+          {
+            "index": 79,
+            "timestamp_seconds": 2.8333,
+            "prediction": null,
+            "detection_score": null,
+            "status": "no_face"
+          }
+        ],
+        "prediction": "AI-GENERATED",
+        "detection_score": 0.5750810086727143,
+        "warning": "Uncalibrated score for detected faces in sampled frames only."
+      }
+    },
+    "audio": {
+      "source": "soundtrack.wav",
+      "result": {
+        "model_name": "AASIST",
+        "processing_time_ms": 709.8281000003226,
+        "metadata": {
+          "format": "wav",
+          "codec": "pcm_s16le",
+          "sample_rate": 48000,
+          "channels": 2,
+          "duration_seconds": 2.474666666666667,
+          "analyzed_seconds": 2.4746875
+        },
+        "prediction": "AI-GENERATED",
+        "raw_score": -3.143676519393921,
+        "spoof_logit": 3.050032615661621
+      }
+    }
+  },
+  "not_supplied": [],
+  "flagged_modalities": [
+    "video",
+    "audio"
+  ],
+  "flagged_video_frames": [
+    {
+      "index": 23,
+      "timestamp_seconds": 0.9666333333333333
+    },
+    {
+      "index": 56,
+      "timestamp_seconds": 2.0666333333333333
+    }
+  ],
+  "scope": "Labels describe model findings on the analyzed inputs. Scores are uncalibrated. Content truth and common provenance are unverified."
+}
